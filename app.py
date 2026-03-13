@@ -1,3 +1,4 @@
+from flask import render_template, request, redirect, url_for
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
@@ -35,6 +36,48 @@ class Comment(db.Model):
 with app.app_context():
     db.create_all()
     print("Database created successfully.")
+
+@app.route('/')
+def dashboard():
+    tickets = Ticket.query.all()
+    open_count = Ticket.query.filter_by(status='Open').count()
+    in_progress = Ticket.query.filter_by(status='In Progress').count()
+    resolved = Ticket.query.filter_by(status='Resolved').count()
+    return render_template('dashboard.html', tickets=tickets,
+                           open=open_count, in_progress=in_progress, resolved=resolved)
+
+@app.route('/ticket/new', methods=['GET', 'POST'])
+def new_ticket():
+    if request.method == 'POST':
+        ticket = Ticket(
+            title=request.form['title'],
+            description=request.form['description'],
+            priority=request.form['priority'],
+            user_id=1
+        )
+        db.session.add(ticket)
+        db.session.commit()
+        return redirect(url_for('dashboard'))
+    return render_template('new_ticket.html')
+
+@app.route('/ticket/<int:id>')
+def view_ticket(id):
+    ticket = Ticket.query.get_or_404(id)
+    return render_template('view_ticket.html', ticket=ticket)
+
+@app.route('/ticket/<int:id>/update', methods=['POST'])
+def update_ticket(id):
+    ticket = Ticket.query.get_or_404(id)
+    ticket.status = request.form['status']
+    if ticket.status == 'Resolved':
+        ticket.resolved_at = datetime.utcnow()
+    db.session.commit()
+    return redirect(url_for('view_ticket', id=id))
+
+@app.route('/tickets')
+def all_tickets():
+    tickets = Ticket.query.order_by(Ticket.created_at.desc()).all()
+    return render_template('all_tickets.html', tickets=tickets)
 
 if __name__ == '__main__':
     app.run(debug=True)

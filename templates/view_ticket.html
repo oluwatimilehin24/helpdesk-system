@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="mb-3">Ticket #{{ ticket.id }}: {{ ticket.title }}</h2>
+<div class="card mb-4">
+    <div class="card-body">
+        <p><strong>Description:</strong> {{ ticket.description }}</p>
+        <p><strong>Priority:</strong> 
+            <span class="badge 
+                {% if ticket.priority == 'Critical' %}bg-danger
+                {% elif ticket.priority == 'High' %}bg-warning text-dark
+                {% elif ticket.priority == 'Medium' %}bg-primary
+                {% else %}bg-secondary{% endif %}">
+                {{ ticket.priority }}
+            </span>
+        </p>
+        <p><strong>Status:</strong> {{ ticket.status }}</p>
+        <p><strong>Created:</strong> {{ ticket.created_at.strftime('%d %b %Y %H:%M') }}</p>
+        {% if ticket.resolved_at %}
+        <p><strong>Resolved:</strong> {{ ticket.resolved_at.strftime('%d %b %Y %H:%M') }}</p>
+        {% endif %}
+    </div>
+</div>
+<h5>Update Status</h5>
+<form method="POST" action="/ticket/{{ ticket.id }}/update">
+    <div class="d-flex gap-2 align-items-center">
+        <select name="status" class="form-select w-auto">
+            <option {% if ticket.status == 'Open' %}selected{% endif %}>Open</option>
+            <option {% if ticket.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+            <option {% if ticket.status == 'Resolved' %}selected{% endif %}>Resolved</option>
+        </select>
+        <button type="submit" class="btn btn-primary">Update</button>
+        <a href="/" class="btn btn-secondary">Back to Dashboard</a>
+    </div>
+</form>
+{% endblock %}
