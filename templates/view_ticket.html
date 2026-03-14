@@ -4,8 +4,8 @@
 <div class="card mb-4">
     <div class="card-body">
         <p><strong>Description:</strong> {{ ticket.description }}</p>
-        <p><strong>Priority:</strong> 
-            <span class="badge 
+        <p><strong>Priority:</strong>
+            <span class="badge
                 {% if ticket.priority == 'Critical' %}bg-danger
                 {% elif ticket.priority == 'High' %}bg-warning text-dark
                 {% elif ticket.priority == 'Medium' %}bg-primary
@@ -13,23 +13,48 @@
                 {{ ticket.priority }}
             </span>
         </p>
-        <p><strong>Status:</strong> {{ ticket.status }}</p>
+        <p><strong>Status:</strong> 
+            <span class="badge {% if ticket.status == 'Resolved' %}bg-success{% elif ticket.status == 'In Progress' %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                {{ ticket.status }}
+            </span>
+        </p>
         <p><strong>Created:</strong> {{ ticket.created_at.strftime('%d %b %Y %H:%M') }}</p>
         {% if ticket.resolved_at %}
         <p><strong>Resolved:</strong> {{ ticket.resolved_at.strftime('%d %b %Y %H:%M') }}</p>
         {% endif %}
+        {% if ticket.resolution_notes %}
+        <div class="alert alert-success mt-2">
+            <strong>Resolution Notes:</strong> {{ ticket.resolution_notes }}
+        </div>
+        {% endif %}
     </div>
 </div>
-<h5>Update Status</h5>
-<form method="POST" action="/ticket/{{ ticket.id }}/update">
-    <div class="d-flex gap-2 align-items-center">
-        <select name="status" class="form-select w-auto">
-            <option {% if ticket.status == 'Open' %}selected{% endif %}>Open</option>
-            <option {% if ticket.status == 'In Progress' %}selected{% endif %}>In Progress</option>
-            <option {% if ticket.status == 'Resolved' %}selected{% endif %}>Resolved</option>
-        </select>
-        <button type="submit" class="btn btn-primary">Update</button>
-        <a href="/" class="btn btn-secondary">Back to Dashboard</a>
-    </div>
-</form>
+
+{% if ticket.status != 'Resolved' %}
+<div class="card p-4" style="max-width: 600px;">
+    <h5 class="mb-3">Update Ticket</h5>
+    <form method="POST" action="/ticket/{{ ticket.id }}/update">
+        <div class="mb-3">
+            <label class="form-label fw-bold">Status</label>
+            <select name="status" class="form-select">
+                <option {% if ticket.status == 'Open' %}selected{% endif %}>Open</option>
+                <option {% if ticket.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                <option>Resolved</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label fw-bold">Resolution Notes <span class="text-muted fw-normal">(required when resolving)</span></label>
+            <textarea name="resolution_notes" class="form-control" rows="3" 
+                      placeholder="Describe how the issue was resolved..."></textarea>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Update Ticket</button>
+            <a href="/" class="btn btn-secondary">Back to Dashboard</a>
+        </div>
+    </form>
+</div>
+{% else %}
+<a href="/" class="btn btn-secondary">Back to Dashboard</a>
+{% endif %}
 {% endblock %}
+EOF

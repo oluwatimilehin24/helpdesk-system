@@ -25,6 +25,7 @@ class Ticket(db.Model):
     status = db.Column(db.String(20), default='Open')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     resolved_at = db.Column(db.DateTime, nullable=True)
+    resolution_notes = db.Column(db.Text, nullable=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
 class Comment(db.Model):
@@ -71,6 +72,7 @@ def update_ticket(id):
     ticket.status = request.form['status']
     if ticket.status == 'Resolved':
         ticket.resolved_at = datetime.utcnow()
+        ticket.resolution_notes = request.form.get('resolution_notes', '')
     db.session.commit()
     return redirect(url_for('view_ticket', id=id))
 
@@ -78,6 +80,63 @@ def update_ticket(id):
 def all_tickets():
     tickets = Ticket.query.order_by(Ticket.created_at.desc()).all()
     return render_template('all_tickets.html', tickets=tickets)
+
+@app.route('/sla')
+def sla_dashboard():
+    sla_targets = {
+        'Critical': 4,
+        'High': 8,
+        'Medium': 24,
+        'Low': 72
+    }
+
+    tickets  = Ticket.query.all()
+    sla_data = []
+    breached = 0
+    compliant = 0
+
+    for ticket in tickets:
+        target_hours = sla_targets.get(ticket.priority, 24)
+        target_minutes = target_hours * 60
+
+        if ticket.resolved_at:
+            # Ticket is resolved - calculate actual time taken
+            delta = ticket.resolved_at - ticket.created_at
+            minutes_taken = delta.total_seconds() / 60
+            met_sla = minutes_taken <= target_minutes
+            hours_taken = round(delta.total_seconds() / 3600, 1)
+            status_label = 'Resolved'
+        else:
+            # Ticket still open - calculate time elapsed so far
+            delta = datetime.utcnow() - ticket.created_at
+            minutes_taken = delta.total_seconds() / 60
+            met_sla = minutes_taken  <= target_minutes
+            hours_taken = round(delta.total_seconds() / 3600, 1)
+            status_label = ticket.status
+
+        if met_sla:
+            compliant += 1
+        else:
+            breached += 1
+
+        sla_data.append({
+            'id': ticket.id,
+            'title': ticket.title,
+            'priority': ticket.priority,
+            'status': status_label,
+            'hours_taken': hours_taken,
+            'target_hours': target_hours,
+            'met_sla': met_sla
+        })
+
+    total = compliant + breached
+    compliance_rate = round((compliant / total * 100), 1) if total > 0 else 0
+
+    return render_template('sla_dashboard.html',
+                           sla_data=sla_data,
+                           compliant=compliant,
+                           breached=breached,
+                           compliance_rate=compliance_rate)
 
 if __name__ == '__main__':
     app.run(debug=True)

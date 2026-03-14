@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="mb-4">SLA Dashboard</h2>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-white bg-primary text-center p-3">
+            <h2>{{ compliance_rate }}%</h2>
+            <p class="mb-0">SLA Compliance Rate</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-success text-center p-3">
+            <h2>{{ compliant }}</h2>
+            <p class="mb-0">Within SLA</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-danger text-center p-3">
+            <h2>{{ breached }}</h2>
+            <p class="mb-0">SLA Breached</p>
+        </div>
+    </div>
+</div>
+
+<!-- SLA Targets Reference -->
+<div class="card mb-4">
+    <div class="card-header fw-bold">SLA Targets by Priority</div>
+    <div class="card-body">
+        <div class="row text-center">
+            <div class="col-md-3">
+                <span class="badge bg-danger p-2 w-100">Critical — 4 hours</span>
+            </div>
+            <div class="col-md-3">
+                <span class="badge bg-warning text-dark p-2 w-100">High — 8 hours</span>
+            </div>
+            <div class="col-md-3">
+                <span class="badge bg-primary p-2 w-100">Medium — 24 hours</span>
+            </div>
+            <div class="col-md-3">
+                <span class="badge bg-secondary p-2 w-100">Low — 72 hours</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Ticket SLA Table -->
+<h5 class="mb-3">Ticket Breakdown</h5>
+<table class="table table-hover">
+    <thead class="table-dark">
+        <tr>
+            <th>#</th>
+            <th>Title</th>
+            <th>Priority</th>
+            <th>Status</th>
+            <th>Time Elapsed</th>
+            <th>SLA Target</th>
+            <th>SLA Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in sla_data %}
+        <tr>
+            <td>{{ item.id }}</td>
+            <td><a href="/ticket/{{ item.id }}">{{ item.title }}</a></td>
+            <td>
+                <span class="badge
+                    {% if item.priority == 'Critical' %}bg-danger
+                    {% elif item.priority == 'High' %}bg-warning text-dark
+                    {% elif item.priority == 'Medium' %}bg-primary
+                    {% else %}bg-secondary{% endif %}">
+                    {{ item.priority }}
+                </span>
+            </td>
+            <td>{{ item.status }}</td>
+            <td>{{ item.hours_taken }} hrs</td>
+            <td>{{ item.target_hours }} hrs</td>
+            <td>
+                {% if item.met_sla %}
+                <span class="badge bg-success">✓ Within SLA</span>
+                {% else %}
+                <span class="badge bg-danger">✗ Breached</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="text-center text-muted">No tickets found.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
+EOF
+```
+
+---
+
+## Step 4 — Test it
+
+Save everything, Flask will auto-reload. Then visit:
+```
+http://127.0.0.1:5000/sla
